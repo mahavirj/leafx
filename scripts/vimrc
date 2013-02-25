@@ -1,0 +1,9 @@
+nmap <C-c> :FufFileWithCurrentBufferDir<CR>
+nmap <C-b> :FufBuffer<CR>
+nmap <C-f> :FufTaggedFile<CR>
+let g:fuf_file_exclude = '\v\~$|\.o$|\.exe$|\.bak$|\.swp|\.class$|\.html'
+set autoindent smartindent              " turn on auto/smart indenting
+set smarttab                            " make <tab> and <backspace> smarter
+set textwidth=78
+set incsearch                           " search as you type
+set ignorecase                          " ignore case
