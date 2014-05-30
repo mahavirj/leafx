@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int bar(int val)
+void bar(int val)
 {
 	volatile int cnt;
 	cnt = val;
@@ -9,7 +9,7 @@ int bar(int val)
 	return;
 }
 
-int foo(int val)
+void foo(int val)
 {
 	bar(val);
 	return;
