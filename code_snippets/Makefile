@@ -2,7 +2,10 @@
 CC = gcc
 CFLAGS = -Wall -O2
 
-all: heapsort revstack tailcall
+all: mergesort heapsort revstack tailcall
+
+mergesort: mergesort.c
+	$(CC) $(CFLAGS) $< -o $@
 
 heapsort: heapsort.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -15,4 +18,4 @@ tailcall: tailcall.c
 
 clean:
 	@rm -f *.o
-	@rm -f heapsort revstack tailcall
+	@rm -f mergesort heapsort revstack tailcall
