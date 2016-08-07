@@ -2,9 +2,12 @@
 CC = gcc
 CFLAGS = -Wall -O2
 
-all: mergesort heapsort revstack tailcall circular_arr_min
+all: mergesort mergesort-list heapsort revstack tailcall circular_arr_min
 
 mergesort: mergesort.c
+	$(CC) $(CFLAGS) $< -o $@
+
+mergesort-list: mergesort-list.c
 	$(CC) $(CFLAGS) $< -o $@
 
 heapsort: heapsort.c
@@ -21,4 +24,4 @@ circular_arr_min: circular_arr_min.c
 
 clean:
 	@rm -f *.o
-	@rm -f mergesort heapsort revstack tailcall circular_arr_min
+	@rm -f mergesort mergesort-list heapsort revstack tailcall circular_arr_

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define MAX_ITEM 64
+#define MAX_ITEM 64 * 1024
 
 typedef struct list {
 	int val;
