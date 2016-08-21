@@ -45,7 +45,7 @@ void bubble_up(p_queue_t *p, int value)
 	if (parent <= 0)
 		return;
 
-	if (p->p[parent] < p->p[value]) {
+	if (p->p[parent] > p->p[value]) {
 		pq_swap(p, value, parent);
 		bubble_up(p, parent);
 	}
@@ -59,7 +59,7 @@ void bubble_down(p_queue_t *p, int value)
 	int i;
 	for (i = 0; i <= 1; i++) {
 		if ((c + i) <= p->val) {
-			if (p->p[m_index] < p->p[c + i])
+			if (p->p[m_index] > p->p[c + i])
 				m_index = c + i;
 		}
 	}
