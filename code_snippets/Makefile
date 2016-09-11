@@ -3,8 +3,8 @@
 PRG_SUFFIX_FLAG := 0
 #
 CC := gcc
-LDFLAGS := 
-CFLAGS_INC := -I ./include/ -I ./lib/
+LDFLAGS := libs/linked_list.c 
+CFLAGS_INC := -I ./include/ -I ./libs/
 CFLAGS := -g -O2 -Wall $(CFLAGS_INC)
 #
 ## ==================- NOTHING TO CHANGE BELOW THIS LINE ===================
