@@ -1,5 +1,6 @@
 /* Find and Delete stack mid in O(1) */
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "list.h"
