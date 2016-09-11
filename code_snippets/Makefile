@@ -1,4 +1,4 @@
-.PHONY: all
+.PHONY: all clean
 
 PRG_SUFFIX_FLAG := 0
 #
@@ -16,7 +16,7 @@ BINS := $(patsubst %,%$(PRG_SUFFIX),$(PRGS))
 ## OBJS are automagically compiled by make.
 OBJS := $(patsubst %,%.o,$(PRGS))
 ##
-all : $(BINS)
+all: $(BINS)
 ##
 ## For clarity sake we make use of:
 .SECONDEXPANSION:

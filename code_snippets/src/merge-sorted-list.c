@@ -5,14 +5,20 @@
 
 node_t *merge_sorted_list(node_t *a, node_t *b)
 {
-	node_t temp; /* dummy anchor for merged list */
-	node_t *t = &temp, *fetch;
-	t->next = NULL;
+	node_t *t, *fetch, *head;
 
 	if (a == NULL)
 		return b;
 	else if (b == NULL)
 		return a;
+
+	if (a->data < b->data) {
+		head = t = a;
+		a = a->next;
+	} else {
+		head = t = b;
+		b = b->next;
+	}
 
 	while (a && b) {
 		if (a->data < b->data) {
@@ -32,13 +38,13 @@ node_t *merge_sorted_list(node_t *a, node_t *b)
 	else if (b)
 		t->next = b;
 
-	return temp.next;
+	return head;
 }
 
 int main(void)
 {
-	node_t *a = create_sorted_list(1600);
-	node_t *b = create_sorted_list(3200);
+	node_t *a = create_sorted_list(3200);
+	node_t *b = create_sorted_list(1600);
 
 	print_list(a);
 	print_list(b);
