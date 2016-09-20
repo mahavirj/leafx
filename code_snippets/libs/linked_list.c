@@ -152,10 +152,52 @@ node_t *create_list(int no_elements)
 	return head;
 }
 
+static int insert_sorted_order(node_t **head, node_t *node)
+{
+	/* 1. Handles null linked list condition
+	 * 2. Handles first node insert condition
+         */
+	if ((*head) == NULL || (*head)->data > node->data) {
+		node->next = *head;
+		*head = node;
+	} else {
+		node_t *tmp = *head;
+		/* 3/4. Handles middle and tail insert */
+		while ((tmp->next != NULL) && (tmp->next->data < node->data))
+			tmp = tmp->next;
+
+		node->next = tmp->next;
+		tmp->next = node;
+	}
+	return 0;
+}
+
+static int sort_list(node_t **head)
+{
+	node_t *sorted = NULL;
+	node_t *temp = *head;
+
+	while (temp != NULL) {
+		node_t *store = temp;
+		temp = temp->next;
+		insert_sorted_order(&sorted, store);
+	}
+
+	*head = sorted;
+	return 0;
+}
+
 node_t *create_sorted_list(int no_elements)
 {
 	node_t *n = create_list(no_elements);
+
+	/* O(n^2) vs O(nlogn) complexity */
+#if 0
+	/* Additional O(n) space required, as data is flipped and not nodes */
 	merge_sort(n, 0, no_elements - 1);
+#else
+	sort_list(&n);
+#endif
 	return n;
 }
 
