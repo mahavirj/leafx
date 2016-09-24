@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean Makefile
 
 PRG_SUFFIX_FLAG := 0
 #

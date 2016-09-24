@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MEM_DEBUG
 
@@ -33,14 +34,18 @@ static size_t free_size;
 static char *mem_start;
 const int min_alloc_size = sizeof(node_t);
 
-#define MEM_SIZE (1U << 10 << 6)
+#define MEM_SIZE (1U << 10 << 10)
 #define ALLOCATE (1U << 31)
 
 void tiny_free(void *addr)
 {
-	node_t *new = (node_t *) ((size_t) addr - sizeof(node_t));
+	node_t *new;
 	node_t *current = start;
 
+	if (!addr)
+		return;
+
+	new = (node_t *) ((size_t) addr - sizeof(node_t));
 	if (!(new->size & ALLOCATE)) {
 		printf("Err...unallocated block\n");
 		return;
@@ -123,6 +128,7 @@ void *tiny_malloc(size_t size)
 		current = current->next;
 	}
 
+	dbg("Rquired size unable to allocate %d\n", size - sizeof(node_t));
 	return NULL;
 }
 	
@@ -157,30 +163,39 @@ void iterate_block_list(char *mem_start)
 	}
 }
 
+#define SIZE (1U << 10 << 4)
 int main(void)
 {
-	int ret;
-	char *addr[1024*1024];
+	char *addr[SIZE];
 
+	memset(addr, 0, sizeof(addr));
 	mem_init(MEM_SIZE);
 
+	int alloc, lfree;
 	int i = 0;
-	while (1) {
-		int size = (rand() % 64);
+	while (i < SIZE) {
+		int size = (rand() % 1024) + 1;
 		addr[i] = tiny_malloc(size);
-		if (!addr[i]) {
-			iterate_block_list(mem_start);
-			while (i--) {
-				tiny_free(addr[i]);
-			}
-		
-		} else {
-			memset(addr[i], 0x55, size);
+		if (!addr[i])
+			break;;
+		memset(addr[i], 0x55, size);
+		if (free_size < MEM_SIZE / 2) {
+			do {
+				lfree = rand() % SIZE;
+			} while (!addr[lfree]);
+			tiny_free(addr[lfree]);
+			addr[lfree] = NULL;
 		}
 		i++;
 	}
 
 	iterate_block_list(mem_start);
+
+	for (i = 0; i < SIZE; i++)
+		tiny_free(addr[i]);
+
+	iterate_block_list(mem_start);
+
 	free(mem_start);
 	return 0;
 }
