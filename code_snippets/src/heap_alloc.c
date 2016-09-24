@@ -1,84 +1,92 @@
-/* Tiny mem allocator */
+/* Tiny mem allocator
+ *
+ * First fit method for simplicity and less metadata overhead per node
+ * Compaction for front and back merge supported in O(1)
+ * Malloc/Free complexity of O(n) order for list traversal
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MEM_DEBUG
+
+#ifdef MEM_DEBUG
+#define dbg printf
+#else
+#define dbg {}
+#endif
+
 typedef struct node {
 	size_t size;
 	struct node *next;
-	struct node *prev;
+	/*
+	 * For best fit case, next would be pointer to next free node as per
+	 * size, and previous will also be required for node just previous to
+         * ours based on address. This helps to identify merge conditions based
+         * on node if free or not, without traversing entire list. Next node
+         * based on address could be traced by adding size to current one.
+         */
 } node_t;
 
 static node_t *start;
-static int free_size;
+static size_t free_size;
+static char *mem_start;
+const int min_alloc_size = sizeof(node_t);
 
-#define MEM_SIZE (1UL << 10 << 10)
-#define ALLOCATE (1UL << 31)
-
-#define INIT_LIST_HEAD(head) ({ \
-	(head)->next = NULL; \
-	(head)->prev = NULL; \
-})
-
-static void insert_node(node_t *prev, node_t *new, node_t *next)
-{
-	new->next = next;
-	new->prev = prev;
-	if (prev)
-		prev->next = new;
-	if (next)
-		next->prev = new;
-}
-
-static void remove_node(node_t **head, node_t *node)
-{
-	node_t *t = *head;
-
-	if (t == node) {
-		t->next->prev = t->prev;
-		*head = t->next;
-	} else {
-		t = t->next;
-		while (t) {
-			if (t == node) {
-				t->prev->next = t->next;
-				if (t->next)
-					t->next->prev = t->prev;
-				break;
-			}
-			t = t->next;
-		}
-	}
-}
+#define MEM_SIZE (1U << 10 << 6)
+#define ALLOCATE (1U << 31)
 
 void tiny_free(void *addr)
 {
-	node_t *t = (node_t *) ((size_t) addr - sizeof(node_t));
-	node_t *it = start;
+	node_t *new = (node_t *) ((size_t) addr - sizeof(node_t));
+	node_t *current = start;
 
-	if (!(t->size & (1UL << 31))) {
+	if (!(new->size & ALLOCATE)) {
 		printf("Err...unallocated block\n");
 		return;
 	}
 
-	t->size &= ~(ALLOCATE);
-	free_size += t->size;
+	dbg("Freeing %p\n", addr);	
 
-	if (t->size < it->size) {
-		t->prev = it->prev;
-		t->next = it;
-		it->prev = t;
-		start = t;
+	new->size &= ~(ALLOCATE);
+	free_size += new->size;
+
+	/* Head null or insert after head condition handling */
+	if (current == NULL || new < current) {
+		if (((size_t) new + new->size) == (size_t) current) {
+			new->size += current->size;
+			new->next = current->next;
+			start = new;
+		} else {
+			new->next = current;
+			start = new;
+		}
 	} else {
-		while (it->next && t->size > it->next->size)
-			it = it->next;
-		insert_node(it, t, it->next);
+		while (current->next && (current->next < new))
+			current = current->next;
+
+		/* Insert node anyways */
+		new->next = current->next;
+		current->next = new;
+
+		/* Check for front merge */
+		if (((size_t) new + new->size) == (size_t) new->next) {
+			new->size += new->next->size;
+			new->next = new->next->next;
+		}
+
+		/* Check for back merge */
+		if (((size_t) current + current->size) == (size_t) new) {
+			current->size += new->size;
+			current->next = new->next;
+		}
 	}
 }
 
 void *tiny_malloc(size_t size)
 {
-	node_t *it = start;
+	node_t *current = start;
+	node_t *prev = current;
 
 	size += sizeof(node_t);
 	if (size > free_size) {
@@ -86,21 +94,33 @@ void *tiny_malloc(size_t size)
 		return NULL;
 	}
 
-	while (it) {
-		if (it->size >= size) {
-			if (it->size > size) {
+	while (current) {
+		if (current->size >= size) {
+			if (current->size > (size + min_alloc_size)) {
 				/* Found large enough block */
-				node_t *next = (node_t *) ((size_t) it + size);
-				next->size = it->size - size;
-				insert_node(it, next, it->next);
+				node_t *new = (node_t *) ((size_t) current + size);
+				new->size = current->size - size;
+				new->next = current->next;
+				current->next = new;
+			} else {
+				/* Size could be more than asked, as per min_alloc_size */
+				size = current->size;
 			}
-			it->size = size | ALLOCATE;
-			remove_node(&start, it);
-			free_size -= size;
-			return (void *) ((size_t) it + sizeof(node_t));
-		}
 
-		it = it->next;
+			/* Mark as allocated node, size field is used 31st bit */
+			current->size = size | ALLOCATE;
+			/* See if head needs split */
+			if (current == start)
+				start = current->next;
+			else
+				prev->next = current->next;
+			free_size -= size;
+			dbg("Allocated 0x%x at %p\n", size - sizeof(node_t),
+					 (void *) ((size_t) current + sizeof(node_t)));
+			return (void *) ((size_t) current + sizeof(node_t));
+		}
+		prev = current;
+		current = current->next;
 	}
 
 	return NULL;
@@ -108,7 +128,7 @@ void *tiny_malloc(size_t size)
 	
 int mem_init(size_t size)
 {
-	char *mem_start = (char *) malloc(size);
+	mem_start = (char *) malloc(size);
 	if (!mem_start) {
 		perror("malloc failed");
 		return -1;
@@ -117,54 +137,50 @@ int mem_init(size_t size)
 
 	start = (node_t *) mem_start;
 	start->size = size;
-	INIT_LIST_HEAD(start);
+	start->next = NULL;
 	free_size = size;
 	return 0;
+}
+
+void iterate_block_list(char *mem_start)
+{
+	node_t *current = (node_t *) mem_start;
+
+	printf("\nAddress\t\tSize\t\tNext\t\tStatus\n");
+	while ((size_t) current < (size_t) mem_start + MEM_SIZE) {
+		printf("0x%08x\t0x%08x\t0x%08x\t%s\n",
+			 (size_t) current, current->size & ~(ALLOCATE),
+			 (size_t) current->next,
+			 current->size & ALLOCATE ? "Alloc" : "Free");
+		current = (node_t *) ((size_t) current +
+					 (current->size & ~(ALLOCATE)));
+	}
 }
 
 int main(void)
 {
 	int ret;
-	char *addr[5];
+	char *addr[1024*1024];
 
 	mem_init(MEM_SIZE);
 
 	int i = 0;
 	while (1) {
-		addr[0] = tiny_malloc(1 << 10 << 2);
-		if (!addr[0])
-			break;
-		printf("MEM: allocated %p %d\n", addr[0], ++i);
+		int size = (rand() % 64);
+		addr[i] = tiny_malloc(size);
+		if (!addr[i]) {
+			iterate_block_list(mem_start);
+			while (i--) {
+				tiny_free(addr[i]);
+			}
+		
+		} else {
+			memset(addr[i], 0x55, size);
+		}
+		i++;
 	}
 
-#if 0
-	addr[0] = tiny_malloc(1024);
-	printf("MEM: allocated %p\n", addr[0]);
-	addr[1] = tiny_malloc(512);
-	printf("MEM: allocated %p\n", addr[1]);
-	addr[2] = tiny_malloc(256);
-	printf("MEM: allocated %p\n", addr[2]);
-	addr[3] = tiny_malloc(128);
-	printf("MEM: allocated %p\n", addr[3]);
-	addr[4] = tiny_malloc(64);
-	printf("MEM: allocated %p\n", addr[4]);
-
-	tiny_free(addr[0]);
-	tiny_free(addr[1]);
-	tiny_free(addr[2]);
-	tiny_free(addr[3]);
-	tiny_free(addr[4]);
-
-	addr[0] = tiny_malloc(1024);
-	printf("MEM: allocated %p\n", addr[0]);
-	addr[1] = tiny_malloc(512);
-	printf("MEM: allocated %p\n", addr[1]);
-	addr[2] = tiny_malloc(256);
-	printf("MEM: allocated %p\n", addr[2]);
-	addr[3] = tiny_malloc(128);
-	printf("MEM: allocated %p\n", addr[3]);
-	addr[4] = tiny_malloc(64);
-	printf("MEM: allocated %p\n", addr[4]);
-#endif
+	iterate_block_list(mem_start);
+	free(mem_start);
 	return 0;
 }
