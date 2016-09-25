@@ -171,7 +171,7 @@ int main(void)
 	memset(addr, 0, sizeof(addr));
 	mem_init(MEM_SIZE);
 
-	int alloc, lfree;
+	int lfree;
 	int i = 0;
 	while (i < SIZE) {
 		int size = (rand() % 1024) + 1;
