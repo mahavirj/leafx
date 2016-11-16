@@ -163,6 +163,31 @@ void iterate_block_list(char *mem_start)
 	}
 }
 
+void *tiny_malloc_aligned(size_t size, int alignment)
+{
+	if (alignment & (alignment - 1)) {
+		printf("Err...alignment not power of 2\n");
+		return NULL;
+	}
+
+	/* size overhead due to alignment requirement */
+	size_t alloc_size = (size + sizeof(void *) + (alignment - 1));
+	void *addr = tiny_malloc(alloc_size);
+	if (addr) {
+		void *r_addr = (void *) (((size_t) addr + sizeof(void *) +
+						 (alignment)) & ~(alignment - 1));
+		*((void **) r_addr - 1) = addr;
+		return r_addr;
+	}
+	return NULL;
+}
+
+void tiny_free_aligned(void *addr)
+{
+	tiny_free(*((void **)addr - 1));
+	return;
+}
+
 #define SIZE (1U << 10 << 4)
 int main(void)
 {
@@ -170,6 +195,16 @@ int main(void)
 
 	memset(addr, 0, sizeof(addr));
 	mem_init(MEM_SIZE);
+
+	char *a = tiny_malloc_aligned(32, 1024);
+	char *b = tiny_malloc_aligned(23, 256);
+	char *c = tiny_malloc_aligned(61, 64);
+	char *d = tiny_malloc_aligned(60, 64);
+
+	tiny_free_aligned(a);
+	tiny_free_aligned(b);
+	tiny_free_aligned(c);
+	tiny_free_aligned(d);
 
 	int lfree;
 	int i = 0;
