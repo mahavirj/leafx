@@ -57,7 +57,7 @@ list_head_t *wait_queue_remove(wq_handle handle)
 	return NULL;
 }
 
-int wait_queue_objectse(wq_handle handle)
+int wait_queue_objects(wq_handle handle)
 {
 	if (!handle)
 		return -EINVAL;
