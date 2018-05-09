@@ -1,0 +1,8 @@
+language: c
+sudo: false # only for faster builds
+script:
+  - cd code_snippets
+  - make
+
+after_success:
+- bash <(curl -s https://codecov.io/bash)
