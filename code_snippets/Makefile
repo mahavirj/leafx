@@ -5,7 +5,7 @@ PRG_SUFFIX_FLAG := 0
 CC := gcc
 LDFLAGS := libs/linked_list.c 
 CFLAGS_INC := -I ./include/ -I ./libs/
-CFLAGS := -g -O2 -Wall -pthread $(CFLAGS_INC)
+CFLAGS := -g -O2 -Wall -pthread $(CFLAGS_INC) -coverage
 #
 ## ==================- NOTHING TO CHANGE BELOW THIS LINE ===================
 ##
