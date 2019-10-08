@@ -43,5 +43,6 @@ rebuild: veryclean all
 
 clean:
 	$(RM) $(BINS)
+	$(RM) *.gcov *.gcno
 ##
 ## eof Generic_Multi_Main_PWD.makefile
