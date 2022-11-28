@@ -1,9 +1,30 @@
+nmap <C-t> :silent !cscope -Rbkq<CR>:cs reset<CR>:!ctags -R --exclude="*.js"<CR><CR> 
 nmap <C-c> :FufFileWithCurrentBufferDir<CR>
 nmap <C-b> :FufBuffer<CR>
-nmap <C-f> :FufTaggedFile<CR>
+"nmap <C-f> :FufTaggedFile<CR>
+nmap <C-f> :FZF<CR>
 let g:fuf_file_exclude = '\v\~$|\.o$|\.exe$|\.bak$|\.swp|\.class$|\.html'
 set autoindent smartindent              " turn on auto/smart indenting
-set smarttab                            " make <tab> and <backspace> smarter
-set textwidth=78
-set incsearch                           " search as you type
-set ignorecase                          " ignore case
+set tabstop=4
+set expandtab
+set shiftwidth=4
+syntax on
+set ignorecase
+set smartcase
+nnoremap <F2> :set invpaste paste?<CR>
+set pastetoggle=<F2>                    " allow paste without indentation
+"syntax on
+set laststatus=2
+set number
+set relativenumber
+set tags=tags;/
+set wildmenu
+set wildmode=longest:full,list:full
+set rtp+=~/.fzf
+
+" Spell-check Markdown files and Git Commit Messages
+autocmd FileType markdown setlocal spell
+autocmd FileType gitcommit setlocal spell
+" Enable dictionary auto-completion in Markdown files and Git Commit Messages
+autocmd FileType markdown setlocal complete+=kspell
+autocmd FileType gitcommit setlocal complete+=kspell
